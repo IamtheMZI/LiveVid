@@ -9,6 +9,13 @@ Capture cam;
 String list[]={""};
 String str="";
 int count = 0;
+
+  FileInputStream fis = null;
+    BufferedInputStream bis = null;
+    OutputStream os = null;
+    ServerSocket servsock = null;
+    Socket sock = null;
+    
 void setup() {
   size(640, 480);
 
@@ -33,7 +40,7 @@ void setup() {
 void draw() {
     int prev = millis();
   count++;
-  if(count == 1000){
+  if(count == 10){
     count = 0;
   }
   if (cam.available() == true) {
@@ -41,10 +48,11 @@ void draw() {
   }
 
   image(cam, 0, 0);
-  String filename = "sketch_160325d\\"+count+".tif";
+  String filename = "C:\\Users\\UCSC_UAV\\Documents\\Processing\\workspace\\LiveVid\\sketch_160325d\\"+count+".png";
   save(filename);
   file_upload(filename);
   write_file(count);
+  
   //println(now);
   int now = millis()-prev;
   int del = 90 - now;
@@ -58,7 +66,7 @@ void draw() {
 void write_file(int data){
   try{
     println(data);
-        URL oracle = new URL("http://192.168.0.114/videoshare.php?x="+data);
+        URL oracle = new URL("http://"+Server.ip()+"/videoshare.php?x="+data);
         BufferedReader in = new BufferedReader(
         new InputStreamReader(oracle.openStream()));
         in.close();
@@ -67,97 +75,42 @@ void write_file(int data){
   }
 }
 
-void file_upload(String filename) {
-        URLConnection conn = null;
-        OutputStream os = null;
-        InputStream is = null;
+void file_upload(String FILE_TO_SEND){
 
+    try {
+      servsock = new ServerSocket(12345);
+     // while (true) 
+      {
+        System.out.println("Waiting...");
         try {
-            URL url = new URL("http://192.168.0.114/videoshareupload.php");
-            System.out.println("url:" + url);
-            conn = url.openConnection();
-            conn.setDoOutput(true);
-
-            String postData = "";
-
-            InputStream imgIs = getClass().getResourceAsStream("/"+filename);
-            byte[] imgData = new byte[imgIs.available()];
-            imgIs.read(imgData);
-
-            String message1 = "";
-            message1 += "-----------------------------4664151417711" + CrLf;
-            message1 += "Content-Disposition: form-data; name=\"uploadedfile\"; filename="+filename
-                    + CrLf;
-            message1 += "Content-Type: image/jpeg" + CrLf;
-            message1 += CrLf;
-
-            // the image is sent between the messages in the multipart message.
-
-            String message2 = "";
-            message2 += CrLf + "-----------------------------4664151417711--"
-                    + CrLf;
-
-            conn.setRequestProperty("Content-Type",
-                    "multipart/form-data; boundary=---------------------------4664151417711");
-            // might not need to specify the content-length when sending chunked
-            // data.
-            conn.setRequestProperty("Content-Length", String.valueOf((message1
-                    .length() + message2.length() + imgData.length)));
-
-            System.out.println("open os");
-            os = conn.getOutputStream();
-
-            System.out.println(message1);
-            os.write(message1.getBytes());
-
-            // SEND THE IMAGE
-            int index = 0;
-            int size = 1024;
-            do {
-                System.out.println("write:" + index);
-                if ((index + size) > imgData.length) {
-                    size = imgData.length - index;
-                }
-                os.write(imgData, index, size);
-                index += size;
-            } while (index < imgData.length);
-            System.out.println("written:" + index);
-
-            System.out.println(message2);
-            os.write(message2.getBytes());
-            os.flush();
-
-            System.out.println("open is");
-            is = conn.getInputStream();
-
-            char buff = 512;
-            int len;
-            byte[] data = new byte[buff];
-            do {
-                System.out.println("READ");
-                len = is.read(data);
-
-                if (len > 0) {
-                    System.out.println(new String(data, 0, len));
-                }
-            } while (len > 0);
-
-            System.out.println("DONE");
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            System.out.println("Close connection");
-            try {
-                os.close();
-            } catch (Exception e) {
-            }
-            try {
-                is.close();
-            } catch (Exception e) {
-            }
-            try {
-
-            } catch (Exception e) {
-            }
+          sock = servsock.accept();
+          System.out.println("Accepted connection : " + sock);
+          // send file
+          File myFile = new File (FILE_TO_SEND);
+          byte [] mybytearray  = new byte [(int)myFile.length()];
+          fis = new FileInputStream(myFile);
+          bis = new BufferedInputStream(fis);
+          bis.read(mybytearray,0,mybytearray.length);
+          os = sock.getOutputStream();
+          System.out.println("Sending " + FILE_TO_SEND + "(" + mybytearray.length + " bytes)");
+          os.write(mybytearray,0,mybytearray.length);
+          os.flush();
+          System.out.println("Done.");
         }
+        finally {
+          if (bis != null) bis.close();
+          if (os != null) os.close();
+          if (sock!=null) sock.close();
+        }
+      }
+    }catch(Exception e){
+      
     }
+    finally {
+      try{
+      if (servsock != null) servsock.close();
+      }catch(Exception e){
+        
+      }
+    }
+}

@@ -1,3 +1,5 @@
+import processing.net.*;
+
 int count = 1;
 PImage img;
 PImage previmg;
@@ -11,32 +13,34 @@ void draw(){
     int prev = millis();
   count = read_file(count);
   print(count+" ");
-  //img = loadImage("https://processing.org/img/processing-web.png");
+  //img = loadImage("192.168.0.114/upload/"+count+".tif");
   try{
-  img = loadImage(count+".tif");
-  }catch(Exception e){
-    
-  }
+  img = loadImage("http://"+Server.ip()+"/upload/"+count+".png");
+  //img = loadImage(count+".tif");
   if(img != null)
   image(img, 0, 0);
   else
   image(previmg,0,0);
+  }catch(Exception e){
+    
+  }
+
    int now = millis()-prev;
   println(now);
   int del = 100-now;
   previmg = img;
-  /*
+  
   if(del>0)
   delay(del);
   else
-  delay(now);*/
+  delay(now);
 }
 
 int read_file(int currentframe){
  String[] co_ord={""};
  int x = currentframe;
  try{
- lines = loadStrings("http://192.168.0.114/videoshare.txt");
+ lines = loadStrings("http://"+Server.ip()+"/videoshare.txt");
  }catch(Exception e){
    
  }
